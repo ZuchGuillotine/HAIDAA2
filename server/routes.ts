@@ -18,8 +18,10 @@ import { getMedicalDiagnostic } from "./openai";
 import * as crypto from 'crypto';
 
 export function registerRoutes(app: Express): Server {
+  // Setup FHIR auth first to ensure JWKS endpoint is available
+  setupFhirAuth(app);
+
   setupAuth(app);
-  setupFhirAuth(app); // Add FHIR authentication setup
 
   // Get current user session
   app.get("/api/user", (req, res) => {
