@@ -1,4 +1,4 @@
-# HIPAA-Compliant Medical Diagnostic Platform - Progress Summary
+# Healthcare AI Diagnostic Assistant Application - Progress Summary
 
 ## Completed Features
 
