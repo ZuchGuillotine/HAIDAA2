@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { setupWebSocket } from "./websocket";
+import { setupFhirAuth } from "./fhir";
 import { db } from "@db";
 import { 
   patients, 
@@ -18,6 +19,7 @@ import * as crypto from 'crypto';
 
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
+  setupFhirAuth(app); // Add FHIR authentication setup
 
   // Get current user session
   app.get("/api/user", (req, res) => {

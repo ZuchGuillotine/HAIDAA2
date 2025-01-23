@@ -23,6 +23,7 @@ export const patients = pgTable("patients", {
   emergencyContactPhone: text("emergency_contact_phone"),
   emergencyContactRelation: text("emergency_contact_relation"),
   fhirData: jsonb("fhir_data"),
+  fhirAuth: jsonb("fhir_auth"), 
   keyPair: text("key_pair").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
