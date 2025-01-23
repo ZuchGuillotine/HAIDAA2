@@ -141,6 +141,42 @@ Required secrets:
    - Document categorization
    - Access control management
 
+## SMART on FHIR Integration Progress
+
+### Current Implementation Status
+1. JWKS Server Implementation
+   - Attempted to set up a separate JWKS endpoint for EPIC integration
+   - Created standalone Express server for FHIR authentication
+   - Implemented RSA key generation and JWKS endpoint
+   - Added CORS and proper content-type headers
+
+2. Implementation Challenges
+   - Server Port Binding Issues:
+     * Attempted to run JWKS server on port 5001
+     * Connection refused errors when accessing JWKS endpoint
+     * Need to resolve port binding conflicts
+   - Authentication Flow:
+     * Implemented EPIC OAuth2 callback endpoint
+     * Set up state management for auth flow
+     * Added proper error handling
+   - Environment Configuration:
+     * Added support for development and production URLs
+     * Configured JWKS URL based on environment
+
+3. Next Steps for FHIR Integration
+   - Resolve JWKS server port binding issues
+   - Test JWKS endpoint accessibility
+   - Complete EPIC registration with working JWKS endpoint
+   - Implement proper error handling for auth flow
+   - Add comprehensive logging for debugging
+
+4. Technical Considerations
+   - Need to ensure JWKS endpoint is available before FHIR authorization
+   - Consider alternative approaches for JWKS hosting
+   - Implement proper key rotation and management
+   - Add monitoring for auth server status
+
+
 ## Development Guidelines
 1. Code Standards
    - TypeScript for type safety

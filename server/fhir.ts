@@ -33,30 +33,35 @@ function getAppUrl(): string {
     : 'http://localhost:5000';
 }
 
+function getJwksUrl(): string {
+  return process.env.NODE_ENV === 'production'
+    ? `${process.env.APP_URL}/.well-known/jwks.json`
+    : 'http://localhost:5001/.well-known/jwks.json';
+}
+
+// Create a standalone express app for FHIR authentication
+const fhirApp = express();
+fhirApp.use(cors());
+fhirApp.use(express.json());
+
+// JWKS endpoint
+fhirApp.get('/.well-known/jwks.json', async (_req: Request, res: Response) => {
+  try {
+    const jwks = await keyStore.toJSON(true); // true to include private keys
+    res.setHeader('Content-Type', 'application/json');
+    res.json(jwks);
+  } catch (error) {
+    console.error('Error serving JWKS:', error);
+    res.status(500).json({ error: 'Error generating JWKS' });
+  }
+});
+
 export async function setupFhirAuth(app: Express) {
   // Initialize our keystore
   await initializeKeyStore();
 
-  // Create a router for FHIR endpoints
-  const fhirRouter = express.Router();
-
-  // Add CORS specifically for FHIR endpoints
-  fhirRouter.use(cors());
-
-  // JWKS endpoint
-  fhirRouter.get('/.well-known/jwks.json', async (_req: Request, res: Response) => {
-    try {
-      const jwks = await keyStore.toJSON(true); // true to include private keys
-      res.setHeader('Content-Type', 'application/json');
-      res.json(jwks);
-    } catch (error) {
-      console.error('Error serving JWKS:', error);
-      res.status(500).json({ error: 'Error generating JWKS' });
-    }
-  });
-
   // EPIC OAuth2 callback endpoint
-  fhirRouter.get('/api/auth/epic/callback', async (req: Request, res: Response) => {
+  app.get('/api/auth/epic/callback', async (req: Request, res: Response) => {
     try {
       const { code, state } = req.query;
 
@@ -108,7 +113,7 @@ export async function setupFhirAuth(app: Express) {
   });
 
   // Initiate EPIC authorization
-  fhirRouter.post('/api/auth/epic/authorize/:patientId', async (req: Request, res: Response) => {
+  app.post('/api/auth/epic/authorize/:patientId', async (req: Request, res: Response) => {
     if (!req.user || req.user.role !== 'doctor') {
       return res.status(403).json({ error: 'Only doctors can initiate FHIR authorization' });
     }
@@ -140,7 +145,7 @@ export async function setupFhirAuth(app: Express) {
         redirectUri: `${getAppUrl()}/api/auth/epic/callback`,
         state,
         iss: process.env.EPIC_FHIR_URL,
-        jwksUrl: `${getAppUrl()}/.well-known/jwks.json`
+        jwksUrl: getJwksUrl()
       });
 
       res.json({ authUrl: client.authorizeUrl });
@@ -149,12 +154,14 @@ export async function setupFhirAuth(app: Express) {
       res.status(500).json({ error: 'Failed to initiate FHIR authorization' });
     }
   });
-
-  // Mount the FHIR router at the root level, before any other middleware
-  app.use(fhirRouter);
 }
 
 const stateStore = new Map<string, {
   doctorId: number;
   patientId: number;
 }>();
+
+// Start the FHIR auth server immediately
+fhirApp.listen(5001, '0.0.0.0', () => {
+  console.log('FHIR auth server running on port 5001');
+});
