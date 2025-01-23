@@ -7,22 +7,22 @@ import { patients } from "@db/schema";
 import { eq } from "drizzle-orm";
 
 // Create a keystore for managing our JWKs
-const keyStore = jose.JWK.createKeyStore();
+const keyStore = jose.default.JWK.createKeyStore();
 let currentKey: jose.JWK.Key;
 
 // Initialize the keystore with an RSA key
 async function initializeKeyStore() {
-  currentKey = await keyStore.generate('RSA', 2048, {
-    use: 'sig',
-    alg: 'RS256'
-  });
+  try {
+    currentKey = await keyStore.generate('RSA', 2048, {
+      use: 'sig',
+      alg: 'RS256'
+    });
+    console.log('JWKS keystore initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize JWKS keystore:', error);
+    throw error;
+  }
 }
-
-// FHIR client state storage
-const stateStore = new Map<string, {
-  doctorId: number;
-  patientId: number;
-}>();
 
 // Helper to get the application URL
 function getAppUrl(): string {
@@ -37,8 +37,14 @@ export async function setupFhirAuth(app: Express) {
 
   // JWKS endpoint
   app.get('/.well-known/jwks.json', async (_req: Request, res: Response) => {
-    const jwks = await keyStore.toJSON();
-    res.json(jwks);
+    try {
+      const jwks = await keyStore.toJSON(false);
+      console.log('Serving JWKS:', JSON.stringify(jwks, null, 2));
+      res.json(jwks);
+    } catch (error) {
+      console.error('Error serving JWKS:', error);
+      res.status(500).send('Error generating JWKS');
+    }
   });
 
   // EPIC OAuth2 callback endpoint
@@ -130,3 +136,8 @@ export async function setupFhirAuth(app: Express) {
     }
   });
 }
+
+const stateStore = new Map<string, {
+  doctorId: number;
+  patientId: number;
+}>();
